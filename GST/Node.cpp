@@ -1,21 +1,26 @@
 #include "Node.h"
 
-bool Reference::emptyReference() {
-	return this->u > *(this->v);
-}
-
 bool Reference::validReference() {
-	return this->parrent != nullptr;
+	return this->child != nullptr;
 }
 
 Reference Node::getAdjacent(char c) {
 	if (this->adjacent.find(c) == this->adjacent.end()) {
-		return Reference();
+		return Reference(this->invalidPointer);
 	}
 
 	return this->adjacent[c];
 }
 
+bool Node::containsEdge(char c) {
+	return this->getAdjacent(c).validReference();
+}
+
 Reference SinkNode::getAdjacent(char c) {
-	return Reference(this->root, -1, 0, this->minusOnePointer);
+	// Instead of stringId being 0 pass it from GST functions?
+	return Reference(this->root, 0, 0, this->invalidPointer);
+}
+
+bool SinkNode::containsEdge(char c) {
+	return true;
 }

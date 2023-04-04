@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <stack>
+#include <string>
 #include "Node.h"
 
 class GST {
@@ -10,16 +11,19 @@ public:
 	Node *root;
 	SinkNode *sink;
 	std::vector<std::string> strings;
-	int *minusOnePointer;
+	int *minusOnePointer, *zeroPointer;
 
 	GST();
 	~GST();
 
-	std::pair<Node*, bool> testAndSplit(Reference s, char t);
-	Reference cannonize(Reference rp);
-	Reference update(Reference activePoint, int currentStringIndex, char newChar, int *leafPointer);
+	std::pair<Node*, bool> testAndSplit(Node *s, int activeStringId, int k, int p, char t);
+	ActivePoint cannonize(Node *s, int activeStringId, int k, int p);
+	ActivePoint update(ActivePoint activePoint, int currentStringIndex, int i, int *leafPointer);
 	void addString(std::string s);
+	void dfs();
+private:
+	// Private recursive traversal of GST, use a vector to accumulate strings along visited edges
+	void dfsPrivate(Node* current, std::vector<std::string>& buffer);
 };
 
 #endif
-

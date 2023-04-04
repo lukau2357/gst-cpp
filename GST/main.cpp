@@ -8,12 +8,31 @@ TODO:
 	Should be OK after that...
 */
 
+#include <chrono>
 #include <iostream>
 #include "GST.h"
 
 int main() {
 	GST* tree = new GST();
-	tree->addString("test");
+	auto start = std::chrono::high_resolution_clock::now();
+	tree->addString("abcdd");
+	auto end = std::chrono::high_resolution_clock::now();
+
+	std::cout << "Time required to build the tree: "
+		<<
+	std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() 
+		<< std::endl;
+
+	// tree->dfs();
+
 	delete tree;
+
+	/*int invalidPointer = -1;
+	Node* test = new Leaf(&invalidPointer);
+	
+	if (dynamic_cast<Leaf*>(test)) {
+		std::cout << "yes" << std::endl;
+	}*/
+
 	return 0;
 }
