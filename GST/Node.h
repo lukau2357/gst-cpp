@@ -5,6 +5,7 @@
 // compute suffix arrays someday?
 #include <unordered_map>
 #include <unordered_set>
+#include <map>
 
 // Convenience variables since right end is always kept as a pointer
 // to solve extension 1 <= h < j, where j is the index of the active suffix
@@ -20,8 +21,7 @@ public:
 	int stringId;
 	int u;
 	int* v;
-
-	// Memory leak possible - not anymore!
+	
 	Reference() : child(nullptr), stringId(-1), u(-1), v(nullptr) {};
 	Reference(int *invalidPointer) : child(nullptr), stringId(-1), u(0), v(invalidPointer) {};
 	Reference(Node* child, int stringId, int u, int *v) : child(child), stringId(stringId), u(u), v(v) {};
@@ -58,6 +58,7 @@ public:
 	Node* root;
 	SinkNode(Node* root, int *invalidPointer) : Node(invalidPointer), root(root) {};
 	~SinkNode() {};
+
 	Reference getAdjacent(char c);
 	bool containsEdge(char c);
 };

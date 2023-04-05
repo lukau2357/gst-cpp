@@ -361,3 +361,7 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+# Binaries (Windows and Unix-based). Create a more elegant regular expression
+GST/main
+GST/main.exe

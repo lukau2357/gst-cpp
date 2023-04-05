@@ -7,8 +7,6 @@ GST::GST() {
 	this->root = new Node(this->minusOnePointer);
 	this->sink = new SinkNode(this->root, this->zeroPointer);
 	(this->root)->suffixLink = (Node*)(this->sink);
-	// This helped somehow...
-	this->sink->suffixLink = this->root;
 }
 
 GST::~GST() {
@@ -27,10 +25,6 @@ GST::~GST() {
 			// causes seg. faults.
 			pointerSet.insert(it->second.v);
 			inorderStack.push(it->second.child);
-			// Hypothesis is that here someone's next is a sink node, test tomorrow...
-			if (it->second.child == this->sink) {
-				std::cout << "entered" << std::endl;
-			}
 		}
 
 		delete current;
@@ -38,6 +32,7 @@ GST::~GST() {
 
 	delete minusOnePointer;
 	delete zeroPointer;
+
 	for (auto it = pointerSet.begin(); it != pointerSet.end(); ++it) {
 		delete *it;
 	}
@@ -61,7 +56,7 @@ std::pair<Node*, bool>GST::testAndSplit(Node* s, int activeStringId, int k, int 
 		Node *sPrime = handleTransition.child;
 		int kPrime = handleTransition.u;
 		// int stringIdPrime = handleTransition.stringId; should be the same as activeStringId
-		int pPrime = *(handleTransition.v);
+		int *pPrime = handleTransition.v;
 		int offset = kPrime + p - k + 1;
 
 		if (this->strings[activeStringId][offset] == t) {
@@ -74,7 +69,8 @@ std::pair<Node*, bool>GST::testAndSplit(Node* s, int activeStringId, int k, int 
 		// Virtualize adjacent function as well? For now not...
 		
 		s->adjacent[handle] = Reference(r, activeStringId, kPrime, new int(kPrime + p - k));
-		r->adjacent[this->strings[activeStringId][kPrime + p - k + 1]] = Reference(sPrime, activeStringId, kPrime + p - k + 1, new int(pPrime));
+		// The right pointer for the new edge should remain the same, new would invalidate our leaf update rule !!!!
+		r->adjacent[this->strings[activeStringId][kPrime + p - k + 1]] = Reference(sPrime, activeStringId, kPrime + p - k + 1, pPrime);
 
 		// s->adjacent[handle] = Reference(r, activeStringId, k, new int(p));
 		// r->adjacent[this->strings[activeStringId][p + 1]] = Reference(sPrime, activeStringId, p + 1, new int(pPrime));
@@ -113,6 +109,7 @@ ActivePoint GST::cannonize(Node* s, int activeStringId, int k, int p) {
 
 		if (k <= p) {
 			// Could be activeStringId instead of stringIdPrime?
+			// Pay atention to this part when testing for GENERALIZED SUFFIX TREE!!!
 			char handle = this->strings[stringIdPrime][k];
 			next = s->getAdjacent(handle);
 			sPrime = next.child;
@@ -179,14 +176,13 @@ void GST::addString(std::string s) {
 
 	for (int i = 0; i < s.size(); i++) {
 		(*leafPointer)++;
-		printf("%d\n", i);
 		// printf("%p %d %d\n", activePoint.parrent, activePoint.stringId, activePoint.u);
 		activePoint = update(activePoint, stringIndex, i, leafPointer);
-		activePoint = cannonize(activePoint.parrent, activePoint.stringId, activePoint.u, i - 1);
+		activePoint = cannonize(activePoint.parrent, activePoint.stringId, activePoint.u, i);
 	}
 }
 
-void GST::dfsPrivate(Node *current, std::vector<std::string> &buffer) {
+void GST::dfsPrivate(Node *current, std::vector<std::string> &buffer, std::map<int, std::string> &suffixes) {
 	Leaf* ptr = dynamic_cast<Leaf*>(current);
 
 	if (ptr != nullptr) {
@@ -195,12 +191,16 @@ void GST::dfsPrivate(Node *current, std::vector<std::string> &buffer) {
 			suffix += *it;
 		}
 		
+		/*
 		std::cout << "Suffix found: " << suffix << std::endl;
 		std::cout << "Strings containing the given suffix: " << std::endl;
 		for (auto it = ptr->matchingStrings.begin(); it != ptr->matchingStrings.end(); ++it) {
 			std::cout << *it << " ";
 		}
-		std::cout << std::endl;
+		std::cout << std::endl;*/
+
+		int suffixSize = suffix.size();
+		suffixes[suffixSize] = suffix;
 		return;
 	}
 
@@ -209,20 +209,20 @@ void GST::dfsPrivate(Node *current, std::vector<std::string> &buffer) {
 		int stringId = it->second.stringId;
 		int k = it->second.u;
 		int p = *(it->second.v);
-		buffer.push_back(this->strings[stringId].substr(k, p + k - 1));
+		buffer.push_back(this->strings[stringId].substr(k, p - k + 1));
 
-		/*for (auto it = buffer.begin(); it != buffer.end(); ++it) {
-			std::cout << *it << " ";
-		}*/
-
-		std::cout << std::endl;
-
-		dfsPrivate(child, buffer);
+		dfsPrivate(child, buffer, suffixes);
 		buffer.pop_back();
 	}
 }
 
 void GST::dfs() {
 	std::vector<std::string> buffer;
-	dfsPrivate(this->root, buffer);
+	std::map<int, std::string> suffixes; 
+	dfsPrivate(this->root, buffer, suffixes);
+	std::cout << "Suffixes:" << std::endl;
+
+	for(auto it = suffixes.begin(); it != suffixes.end(); ++it) {
+		std::cout << it->second << std::endl;
+	}
 }

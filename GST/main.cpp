@@ -1,21 +1,15 @@
 // GST.cpp : This file contains the 'main' function. Program execution begins and ends there.
-//
-
-/*
-TODO:
-	Instead of getting References from adjacent map use getAdjacent virtual function for sink node.
-	Also implement a virtual function for checking wheter a node contains a given key.
-	Should be OK after that...
-*/
-
 #include <chrono>
 #include <iostream>
+#include <map>
+#include <unordered_map>
 #include "GST.h"
 
 int main() {
 	GST* tree = new GST();
+	std::string inString = "ACBGDAAAAAAABGDAAAAA";
 	auto start = std::chrono::high_resolution_clock::now();
-	tree->addString("abcdd");
+	tree->addString(inString);
 	auto end = std::chrono::high_resolution_clock::now();
 
 	std::cout << "Time required to build the tree: "
@@ -23,16 +17,12 @@ int main() {
 	std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() 
 		<< std::endl;
 
-	// tree->dfs();
+	tree->dfs();
+	
+	std::cout << "Input string:" << std::endl;
+	std::cout << inString + "$" << std::endl;
 
 	delete tree;
-
-	/*int invalidPointer = -1;
-	Node* test = new Leaf(&invalidPointer);
-	
-	if (dynamic_cast<Leaf*>(test)) {
-		std::cout << "yes" << std::endl;
-	}*/
 
 	return 0;
 }

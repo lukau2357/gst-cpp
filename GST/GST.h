@@ -23,7 +23,7 @@ public:
 	void dfs();
 private:
 	// Private recursive traversal of GST, use a vector to accumulate strings along visited edges
-	void dfsPrivate(Node* current, std::vector<std::string>& buffer);
+	void dfsPrivate(Node* current, std::vector<std::string>& buffer, std::map<int, std::string> &suffixes);
 };
 
 #endif
