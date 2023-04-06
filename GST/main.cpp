@@ -7,22 +7,24 @@
 
 int main() {
 	GST* tree = new GST();
-	std::string inString = "ACBGDAAAAAAABGDAAAAA";
-	auto start = std::chrono::high_resolution_clock::now();
-	tree->addString(inString);
-	auto end = std::chrono::high_resolution_clock::now();
+	std::string inString = "DFGJDFGKJDFGLKJDFGKJD";
 
-	std::cout << "Time required to build the tree: "
+	// auto start = std::chrono::high_resolution_clock::now();
+	tree->addString(inString);
+	// auto end = std::chrono::high_resolution_clock::now();
+
+	/*std::cout << "Time required to build the tree: "
 		<<
 	std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() 
-		<< std::endl;
+		<< std::endl;*/
 
+	std::string testString = "testKJD";
+	tree->addString(testString);
 	tree->dfs();
-	
-	std::cout << "Input string:" << std::endl;
-	std::cout << inString + "$" << std::endl;
+
+	// std::string suffixTest = "GJKFDG";
+	// printf("%d\n", tree->isSuffix(suffixTest));
 
 	delete tree;
-
 	return 0;
 }
