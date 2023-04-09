@@ -7,10 +7,7 @@
 
 int main() {
 	GST* tree = new GST();
-	std::string inString = "DFGJDFGKJDFGLKJDFGKJD";
-
 	// auto start = std::chrono::high_resolution_clock::now();
-	tree->addString(inString);
 	// auto end = std::chrono::high_resolution_clock::now();
 
 	/*std::cout << "Time required to build the tree: "
@@ -18,13 +15,18 @@ int main() {
 	std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() 
 		<< std::endl;*/
 
-	std::string testString = "testKJD";
-	tree->addString(testString);
+	std::vector<std::string> inStrings = { "mississipi", "missouripi" };
+	int cumLength = 0;
+	for (auto s = inStrings.begin(); s != inStrings.end(); ++s) {
+		tree->addString(*s);
+		cumLength += s->size() + 1;
+	}
+
+	std::string currentString;
 	tree->dfs();
-
-	// std::string suffixTest = "GJKFDG";
-	// printf("%d\n", tree->isSuffix(suffixTest));
-
+	printf("%d %d\n", tree->leafCounter, cumLength);
+	// printf("%d\n", tree->isSubstring("ipiz"));
+	// printf("%d\n", tree->isSuffix("ii$")); 
 	delete tree;
 	return 0;
 }

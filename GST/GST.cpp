@@ -39,11 +39,11 @@ GST::~GST() {
 }
 
 std::pair<Node*, bool>GST::testAndSplit(Node* s, int activeStringId, int k, int p, char t) {
-	// activeState = (s, stringId, k, p) = s', k and p are relative to the shortest suffix of 
-	// string on index stringId that passes through both s and s' in the tree.
-	char handle = this->strings[activeStringId][k];
+	// activeState = (s, stringId, k, p) = s'
+	// activeStringId treba da bude id stringa koji se unosi!
 
 	if (k <= p) {
+		char handle = this->strings[activeStringId][k];
 		// Could be problematic...
 		// Input Reference needs to have parrent in parrent
 		// Transitions from GST Nodes need to have next node in parrent!
@@ -53,11 +53,12 @@ std::pair<Node*, bool>GST::testAndSplit(Node* s, int activeStringId, int k, int 
 		// stringId of handleTransition should be the same as that of s?
 		Node *sPrime = handleTransition.child;
 		int kPrime = handleTransition.u;
-		// int stringIdPrime = handleTransition.stringId; should be the same as activeStringId
+		int transitionStringId = handleTransition.stringId;
 		int *pPrime = handleTransition.v;
 		int offset = kPrime + p - k + 1;
 
-		if (this->strings[activeStringId][offset] == t) {
+		// getting from activeStringId before...
+		if (this->strings[transitionStringId][offset] == t) {
 			return std::make_pair(s, true);
 		}
 
@@ -65,17 +66,18 @@ std::pair<Node*, bool>GST::testAndSplit(Node* s, int activeStringId, int k, int 
 		// g(s, (k', k' + v - u) = r
 		// g(r, (k' + v - u + 1, p') = s'
 		// Virtualize adjacent function as well? For now not...
-		s->adjacent[handle] = Reference(r, activeStringId, kPrime, new int(kPrime + p - k));
+		s->adjacent[handle] = Reference(r, transitionStringId, kPrime, new int(kPrime + p - k));
 		// The right pointer for the new edge should remain the same, new would invalidate our leaf update rule !!!!
-		r->adjacent[this->strings[activeStringId][kPrime + p - k + 1]] = Reference(sPrime, activeStringId, kPrime + p - k + 1, pPrime);
-
-		// s->adjacent[handle] = Reference(r, activeStringId, k, new int(p));
-		// r->adjacent[this->strings[activeStringId][p + 1]] = Reference(sPrime, activeStringId, p + 1, new int(pPrime));
-
+		r->adjacent[this->strings[transitionStringId][kPrime + p - k + 1]] = Reference(sPrime, transitionStringId, kPrime + p - k + 1, pPrime);
 		return std::make_pair(r, false);
 	}
 
 	if (s->containsEdge(t)) {
+		/*Leaf* leafTest = dynamic_cast<Leaf*>(s->getAdjacent(t).child);
+		if (dynamic_cast<Leaf*>(leafTest) != nullptr) {
+			leafTest->matchingStrings.insert(activeStringId);
+			printf("Testing for leaf: %d\n", leafTest->suffixLink != nullptr);
+		}*/
 		return std::make_pair(s, true);
 	}
 
@@ -85,10 +87,6 @@ std::pair<Node*, bool>GST::testAndSplit(Node* s, int activeStringId, int k, int 
 // For a given reference pair r = g(s, stringId, k, p) return the cannonical reference pair
 // g(s', stringId', k', p) for some state r. Note that pl(cannonical reference) is a suffix 
 // of pl(reference) for every reference, so the right pointer does not change. 
-
-// Add two activeStringIDs, one for k and another for p?
-// Need more stringIds to perform cannonization?
-// Can a tree have reference points with alternating stringIds on an edge?
 ActivePoint GST::cannonize(Node* s, int activeStringId, int k, int p) {
 	if (k > p) {
 		return ActivePoint(s, activeStringId, k);
@@ -107,10 +105,9 @@ ActivePoint GST::cannonize(Node* s, int activeStringId, int k, int p) {
 		s = sPrime;
 
 		if (k <= p) {
-			// Could be activeStringId instead of stringIdPrime?
-			// Pay atention to this part when testing for GENERALIZED SUFFIX TREE!!!
-			// For GST it turns out that settings stringIdPrime here instead of activeStringId was a mistake, investiagte!
-			char handle = this->strings[stringIdPrime][k];
+			// handle lookup always relative to activeStringId?
+			// Now do everything relative to activeStringId, should be ok verify once agin!!!
+			handle = this->strings[activeStringId][k];
 			next = s->getAdjacent(handle);
 			sPrime = next.child;
 			stringIdPrime = next.stringId;
@@ -121,7 +118,7 @@ ActivePoint GST::cannonize(Node* s, int activeStringId, int k, int p) {
 	
 	// Could be activeStringId instead of stringIdPrime?
 	// For GST it turns out that settings stringIdPrime here instead of activeStringId was a mistake, investiagte!
-	return ActivePoint(s, stringIdPrime, k);
+	return ActivePoint(s, activeStringId, k);
 }
 
 ActivePoint GST::update(ActivePoint activePoint, int currentStringIndex, int i, int *leafPointer) {
@@ -130,23 +127,28 @@ ActivePoint GST::update(ActivePoint activePoint, int currentStringIndex, int i, 
 
 	Node *oldRoot = this->root;
 	char newChar = this->strings[currentStringIndex][i];
-	std::pair<Node*, bool> res = testAndSplit(activePoint.parrent, activePoint.stringId, activePoint.u, i - 1, newChar);
+	// Bilo je activePoint.stringId!!!
+	std::pair<Node*, bool> res = testAndSplit(activePoint.parrent, currentStringIndex, activePoint.u, i - 1, newChar);
 
 	while (!res.second) {
 		// Leaf could have benn inserted before in GST, it could happend that multiple strings
 		// Have a same suffix
+
+		/*
 		Leaf* leaf;
 		if (!res.first->containsEdge(newChar)) {
 			leaf = new Leaf(this->minusOnePointer);
-			res.first->adjacent[newChar] =
-				Reference((Node*)(leaf), currentStringIndex, i, leafPointer);
+			res.first->adjacent[newChar] = Reference(leaf, currentStringIndex, i, leafPointer);
 		}
 
 		else {
-			leaf = (Leaf*) res.first->getAdjacent(newChar).child;
+			leaf = (Leaf*)(res.first->getAdjacent(newChar).child);
 		}
 
-		// Not necessary to map the offset of the suffix for every string?
+		leaf->matchingStrings.insert(currentStringIndex);*/
+
+		Leaf *leaf = new Leaf(this->minusOnePointer);
+		res.first->adjacent[newChar] = Reference(leaf, currentStringIndex, i, leafPointer);
 		leaf->matchingStrings.insert(currentStringIndex);
 		
 		if (oldRoot != root) {
@@ -154,12 +156,22 @@ ActivePoint GST::update(ActivePoint activePoint, int currentStringIndex, int i, 
 		}
 
 		oldRoot = res.first;
-		activePoint = cannonize(activePoint.parrent->suffixLink, activePoint.stringId, activePoint.u, i - 1);
-		res = testAndSplit(activePoint.parrent, activePoint.stringId, activePoint.u, i - 1, newChar);
+		// Bilo je activePoint.stringId
+		activePoint = cannonize(activePoint.parrent->suffixLink, currentStringIndex, activePoint.u, i - 1);
+		// Bilo je activePoint.stringId
+		res = testAndSplit(activePoint.parrent, currentStringIndex, activePoint.u, i - 1, newChar);
 	}
 
 	if (oldRoot != this->root) {
 		oldRoot->suffixLink = activePoint.parrent;
+	}
+
+	// If terminator (assumed to always be $) is the current character, extend potentially previously
+	// addedd suffixes.
+
+	// res je cvor na koje treba nakaciti list
+	if (newChar == '$') {
+
 	}
 
 	return activePoint;
@@ -169,10 +181,10 @@ ActivePoint GST::update(ActivePoint activePoint, int currentStringIndex, int i, 
 // We cannot use the skip/count trick here since we do not have any theoretical guarantees
 // regarding the path label while descending the tree, which was not the case with 
 // the build procecdure.
-std::pair<ActivePoint, int> GST::walkDown(std::string &s, int stringIndex) {
-	// ActivePoint activePoint(this->root, stringIndex, 0);
-	ActivePoint activePoint(this->root, stringIndex, 0);
+std::pair<ActivePoint, int> GST::walkDown(std::string s) {
+	ActivePoint activePoint(this->root, 0, 0);
 	int p = -1;
+	int edgeMatch = 0;
 	char handle;
 	int n = s.size();
 	Node *child = this->root;
@@ -181,9 +193,9 @@ std::pair<ActivePoint, int> GST::walkDown(std::string &s, int stringIndex) {
 	for(; i < n;) {
 		handle = s[i];
 		// Start walking down from a new edge
-		if(activePoint.u > p) {
+		if(edgeMatch > p) {
 			if(!child->containsEdge(handle)) {
-				return std::make_pair(activePoint, i - 1);
+				return std::make_pair(ActivePoint(child, activePoint.stringId, activePoint.u), i - 1);
 			}
 
 			Reference adjacent = child->getAdjacent(handle);
@@ -192,21 +204,22 @@ std::pair<ActivePoint, int> GST::walkDown(std::string &s, int stringIndex) {
 			activePoint.stringId = adjacent.stringId;
 			activePoint.u = adjacent.u;
 			p = *(adjacent.v);
+			edgeMatch = adjacent.u;
 		}
 
 		else {
-			if(this->strings[activePoint.stringId][activePoint.u] != handle) {
-				// Could be problematic decrementing u by 1?
-				return std::make_pair(ActivePoint(activePoint.parrent, activePoint.stringId, activePoint.u - 1), i - 1);
+			if(this->strings[activePoint.stringId][edgeMatch] != handle) {
+				std::cout << s.substr(0, i + 1) << std::endl;
+				return std::make_pair(ActivePoint(activePoint.parrent, activePoint.stringId, activePoint.u), i - 1);
 			}
 
-			activePoint.u++;
+			edgeMatch++;
 			i++;
 		}
 	}
 
 	// The entire input string is contained in the tree.
-	return std::make_pair(activePoint, i - 1);
+	return std::make_pair(ActivePoint(child, activePoint.stringId, activePoint.u), i);
 }
 
 void GST::addString(std::string s) {
@@ -215,16 +228,17 @@ void GST::addString(std::string s) {
 	int stringIndex = this->strings.size();
 	this->strings.push_back(s);
 
-	// std::pair<ActivePoint, int> wd = walkDown(s, stringIndex);
-	std::pair<ActivePoint, int> wd = walkDown(s, stringIndex);
+	std::pair<ActivePoint, int> wd = walkDown(s);
 	ActivePoint activePoint = wd.first;
 	int i = wd.second + 1;
 	int *leafPointer = new int(i - 1);
 
 	for(; i < s.size(); i++) {
+		printf("%d\n", i);
 		(*leafPointer)++;
 		activePoint = update(activePoint, stringIndex, i, leafPointer);
-		activePoint = cannonize(activePoint.parrent, activePoint.stringId, activePoint.u, i);
+		// bilo je activePoint.stringId
+		activePoint = cannonize(activePoint.parrent, stringIndex, activePoint.u, i);
 	}
 }
 
@@ -234,11 +248,15 @@ void GST::dfsPrivate(Node *current, std::vector<std::string> &buffer, std::map<i
 	if (ptr != nullptr) {
 		std::string suffix;
 		for (auto it = buffer.begin(); it != buffer.end(); ++it) {
+			// std::cout << *it << " ";
 			suffix += *it;
 		}
 
+		// std::cout <<  std::endl;
+
 		int suffixSize = suffix.size();
 		suffixes[suffixSize].push_back(std::make_pair(suffix, ptr->matchingStrings));
+		this->leafCounter++;
 		return;
 	}
 
@@ -272,9 +290,12 @@ void GST::dfs() {
 	}
 }
 
-bool GST::isSubstring(std::string &query) {
-	/*std::pair<ActivePoint, int> wd = walkDown(query);
-	printf("%d\n", wd.second);
-	return wd.second == query.size();*/
-	return true;
+bool GST::isSubstring(std::string query) {
+	std::pair<ActivePoint, int> wd = walkDown(query);
+	return wd.second == query.size();
+}
+
+bool GST::isSuffix(std::string query) {
+	std::pair<ActivePoint, int> wd = walkDown(query);
+	return wd.second == query.size() && (dynamic_cast<Leaf*>(wd.first.parrent) != nullptr);
 }

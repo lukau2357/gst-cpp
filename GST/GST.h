@@ -12,19 +12,20 @@ public:
 	SinkNode *sink;
 	std::vector<std::string> strings;
 	int *minusOnePointer, *zeroPointer;
+	int leafCounter = 0;
 
 	GST();
 	~GST();
 
 	std::pair<Node*, bool> testAndSplit(Node *s, int activeStringId, int k, int p, char t);
 	ActivePoint cannonize(Node *s, int activeStringId, int k, int p);
-	// std::pair<ActivePoint, int> walkDown(std::string &s, int stringIndex);
-	std::pair<ActivePoint, int> walkDown(std::string &s, int stringIndex);
+	std::pair<ActivePoint, int> walkDown(std::string s);
+	// std::pair<ActivePoint, int> walkDown(std::string s);
 	ActivePoint update(ActivePoint activePoint, int currentStringIndex, int i, int *leafPointer);
 
 	// Test whether or not the given string is a suffix of one of the present build strings in the GST
-	bool isSubstring(std::string &query);
-
+	bool isSubstring(std::string query);
+	bool isSuffix(std::string query);
 	void addString(std::string s);
 	void dfs();
 private:
