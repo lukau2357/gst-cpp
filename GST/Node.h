@@ -69,8 +69,8 @@ public:
 	// The id of the suffix that it represents
 	
 	// TODO: Add suffix id in every leaf with Ukkonen's notation?
-	std::unordered_set<int> matchingStrings;
-	Leaf(int* invalidPointer) : Node(invalidPointer) {};
+	int stringId;
+	Leaf(int* invalidPointer, int stringId) : Node(invalidPointer), stringId(stringId) {};
 	~Leaf() {};
 };
 #endif

@@ -1,0 +1,3 @@
+- Implementirati neke od osnovnih operacija: najduzi ponavljajuci pattern, zajednicki podstirngovi, ...
+
+- Eventualno uvesti da svi stringovi dijele isti terminacioni karakter, to ce da dovede do promjena u update proceduri, moglo bi cak i da dovede do asimptotski losijeg algoritma?

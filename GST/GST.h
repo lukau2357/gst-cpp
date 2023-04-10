@@ -12,8 +12,14 @@ public:
 	SinkNode *sink;
 	std::vector<std::string> strings;
 	int *minusOnePointer, *zeroPointer;
-	int leafCounter = 0;
+	// Predefined set of terminator characters for each input string
+	// This means that GST supports at most 8 addString operations, which is sufficient most of the time
+	// in practice, especially in bioinformatics. One could extend this set further with more terminator characters,
+	// or even implement the construction algorithm using only one terminator characater, but that would complicate
+	// the update procedure.
 
+	std::vector<std::string> terminators = { "$", "#", "!", "@", "%", "^", "&", "*" };
+	int lastTerminator = 0; // Index of the last non-user terminator character.
 	GST();
 	~GST();
 
@@ -28,10 +34,10 @@ public:
 	bool isSuffix(std::string query);
 	void addString(std::string s);
 	void dfs();
-private:
-	// Private recursive traversal of GST, use a vector to accumulate strings along visited edges
+
+	// For convenience, this remains a public method
 	void dfsPrivate(Node *current, std::vector<std::string> &buffer, 
-	std::map<int, std::vector<std::pair<std::string, std::unordered_set<int>>>> &suffixes);
+		std::map<int, std::vector<std::pair<std::string, int>>> &suffixes);
 };
 
 #endif

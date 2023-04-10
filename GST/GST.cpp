@@ -39,25 +39,20 @@ GST::~GST() {
 }
 
 std::pair<Node*, bool>GST::testAndSplit(Node* s, int activeStringId, int k, int p, char t) {
-	// activeState = (s, stringId, k, p) = s'
-	// activeStringId treba da bude id stringa koji se unosi!
-
+	// activePoint = (s, stringId, k, p) = s'
 	if (k <= p) {
+		if (activeStringId == 2) {
+			printf("Entered\n");
+		}
 		char handle = this->strings[activeStringId][k];
-		// Could be problematic...
-		// Input Reference needs to have parrent in parrent
-		// Transitions from GST Nodes need to have next node in parrent!
-		// Also problems could arise on bellow line!
 		Reference handleTransition = s->getAdjacent(handle);
 
-		// stringId of handleTransition should be the same as that of s?
 		Node *sPrime = handleTransition.child;
 		int kPrime = handleTransition.u;
 		int transitionStringId = handleTransition.stringId;
 		int *pPrime = handleTransition.v;
 		int offset = kPrime + p - k + 1;
 
-		// getting from activeStringId before...
 		if (this->strings[transitionStringId][offset] == t) {
 			return std::make_pair(s, true);
 		}
@@ -65,19 +60,13 @@ std::pair<Node*, bool>GST::testAndSplit(Node* s, int activeStringId, int k, int 
 		Node* r = new Node(this->minusOnePointer);
 		// g(s, (k', k' + v - u) = r
 		// g(r, (k' + v - u + 1, p') = s'
-		// Virtualize adjacent function as well? For now not...
 		s->adjacent[handle] = Reference(r, transitionStringId, kPrime, new int(kPrime + p - k));
-		// The right pointer for the new edge should remain the same, new would invalidate our leaf update rule !!!!
+		// The right pointer for the new edge should remain the same, new pointer would invalidate our leaf update rule !!!!
 		r->adjacent[this->strings[transitionStringId][kPrime + p - k + 1]] = Reference(sPrime, transitionStringId, kPrime + p - k + 1, pPrime);
 		return std::make_pair(r, false);
 	}
 
 	if (s->containsEdge(t)) {
-		/*Leaf* leafTest = dynamic_cast<Leaf*>(s->getAdjacent(t).child);
-		if (dynamic_cast<Leaf*>(leafTest) != nullptr) {
-			leafTest->matchingStrings.insert(activeStringId);
-			printf("Testing for leaf: %d\n", leafTest->suffixLink != nullptr);
-		}*/
 		return std::make_pair(s, true);
 	}
 
@@ -105,7 +94,6 @@ ActivePoint GST::cannonize(Node* s, int activeStringId, int k, int p) {
 		s = sPrime;
 
 		if (k <= p) {
-			// handle lookup always relative to activeStringId?
 			// Now do everything relative to activeStringId, should be ok verify once agin!!!
 			handle = this->strings[activeStringId][k];
 			next = s->getAdjacent(handle);
@@ -115,63 +103,31 @@ ActivePoint GST::cannonize(Node* s, int activeStringId, int k, int p) {
 			pPrime = *(next.v);
 		}
 	}
-	
-	// Could be activeStringId instead of stringIdPrime?
-	// For GST it turns out that settings stringIdPrime here instead of activeStringId was a mistake, investiagte!
 	return ActivePoint(s, activeStringId, k);
 }
 
 ActivePoint GST::update(ActivePoint activePoint, int currentStringIndex, int i, int *leafPointer) {
 	// activePoint = (active, stringId, k, i - 1) - cannonical reference to the active state
 	// i - We are inserting this->strings[stringId][i] into the GST.
-
 	Node *oldRoot = this->root;
 	char newChar = this->strings[currentStringIndex][i];
-	// Bilo je activePoint.stringId!!!
 	std::pair<Node*, bool> res = testAndSplit(activePoint.parrent, currentStringIndex, activePoint.u, i - 1, newChar);
 
 	while (!res.second) {
-		// Leaf could have benn inserted before in GST, it could happend that multiple strings
-		// Have a same suffix
-
-		/*
-		Leaf* leaf;
-		if (!res.first->containsEdge(newChar)) {
-			leaf = new Leaf(this->minusOnePointer);
-			res.first->adjacent[newChar] = Reference(leaf, currentStringIndex, i, leafPointer);
-		}
-
-		else {
-			leaf = (Leaf*)(res.first->getAdjacent(newChar).child);
-		}
-
-		leaf->matchingStrings.insert(currentStringIndex);*/
-
-		Leaf *leaf = new Leaf(this->minusOnePointer);
+		Leaf *leaf = new Leaf(this->minusOnePointer, currentStringIndex);
 		res.first->adjacent[newChar] = Reference(leaf, currentStringIndex, i, leafPointer);
-		leaf->matchingStrings.insert(currentStringIndex);
 		
 		if (oldRoot != root) {
 			oldRoot->suffixLink = res.first;
 		}
 
 		oldRoot = res.first;
-		// Bilo je activePoint.stringId
 		activePoint = cannonize(activePoint.parrent->suffixLink, currentStringIndex, activePoint.u, i - 1);
-		// Bilo je activePoint.stringId
 		res = testAndSplit(activePoint.parrent, currentStringIndex, activePoint.u, i - 1, newChar);
 	}
 
 	if (oldRoot != this->root) {
 		oldRoot->suffixLink = activePoint.parrent;
-	}
-
-	// If terminator (assumed to always be $) is the current character, extend potentially previously
-	// addedd suffixes.
-
-	// res je cvor na koje treba nakaciti list
-	if (newChar == '$') {
-
 	}
 
 	return activePoint;
@@ -190,7 +146,7 @@ std::pair<ActivePoint, int> GST::walkDown(std::string s) {
 	Node *child = this->root;
 	int i = 0;
 
-	for(; i < n;) {
+	while(i < n) {
 		handle = s[i];
 		// Start walking down from a new edge
 		if(edgeMatch > p) {
@@ -209,7 +165,6 @@ std::pair<ActivePoint, int> GST::walkDown(std::string s) {
 
 		else {
 			if(this->strings[activePoint.stringId][edgeMatch] != handle) {
-				std::cout << s.substr(0, i + 1) << std::endl;
 				return std::make_pair(ActivePoint(activePoint.parrent, activePoint.stringId, activePoint.u), i - 1);
 			}
 
@@ -223,40 +178,41 @@ std::pair<ActivePoint, int> GST::walkDown(std::string s) {
 }
 
 void GST::addString(std::string s) {
-	// Append terminator character to the local copy
-	s += "$";
-	int stringIndex = this->strings.size();
-	this->strings.push_back(s);
+	if (lastTerminator == terminators.size()) {
+		std::cout << "Maximum number of strings exceded." << std::endl;
+		return;
+	}
 
+	int stringIndex = this->strings.size();
+	s += terminators[lastTerminator++];
+	this->strings.push_back(s);
 	std::pair<ActivePoint, int> wd = walkDown(s);
+
 	ActivePoint activePoint = wd.first;
 	int i = wd.second + 1;
 	int *leafPointer = new int(i - 1);
 
 	for(; i < s.size(); i++) {
-		printf("%d\n", i);
 		(*leafPointer)++;
 		activePoint = update(activePoint, stringIndex, i, leafPointer);
-		// bilo je activePoint.stringId
 		activePoint = cannonize(activePoint.parrent, stringIndex, activePoint.u, i);
 	}
 }
 
-void GST::dfsPrivate(Node *current, std::vector<std::string> &buffer, std::map<int, std::vector<std::pair<std::string, std::unordered_set<int>>>> &suffixes) {
+void GST::dfsPrivate(Node *current, std::vector<std::string> &buffer, std::map<int, std::vector<std::pair<std::string, int>>> &suffixes) {
 	Leaf* ptr = dynamic_cast<Leaf*>(current);
 
 	if (ptr != nullptr) {
 		std::string suffix;
 		for (auto it = buffer.begin(); it != buffer.end(); ++it) {
-			// std::cout << *it << " ";
 			suffix += *it;
+			std::cout << *it << " ";
 		}
 
-		// std::cout <<  std::endl;
+		std::cout << std::endl;
 
 		int suffixSize = suffix.size();
-		suffixes[suffixSize].push_back(std::make_pair(suffix, ptr->matchingStrings));
-		this->leafCounter++;
+		suffixes[suffixSize].push_back(std::make_pair(suffix, ptr->stringId));
 		return;
 	}
 
@@ -274,18 +230,14 @@ void GST::dfsPrivate(Node *current, std::vector<std::string> &buffer, std::map<i
 
 void GST::dfs() {
 	std::vector<std::string> buffer;
-	std::map<int, std::vector<std::pair<std::string, std::unordered_set<int>>>> suffixes; 
+	std::map<int, std::vector<std::pair<std::string, int>>> suffixes; 
 	dfsPrivate(this->root, buffer, suffixes);
 	std::cout << "Suffixes:" << std::endl;
 
 	for(auto it = suffixes.begin(); it != suffixes.end(); ++it) {
 		for(auto j = it->second.begin(); j != it->second.end(); ++j) {
 			std::cout << j->first << std::endl;
-			std::cout << "String IDs containing the suffix:" << std::endl;
-			for(auto k = j->second.begin(); k != j->second.end(); ++k) {
-				std::cout << *k << " ";
-			}
-			std::cout << std::endl;
+			std::cout << "String ID containing the suffix: " << j->second << std::endl;
 		}
 	}
 }
