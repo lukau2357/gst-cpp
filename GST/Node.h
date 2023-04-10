@@ -67,8 +67,8 @@ class Leaf :public  Node {
 public:
 	// In GST one leaf can represent multiple suffixes, keep track for each different input string
 	// The id of the suffix that it represents
-	
 	// TODO: Add suffix id in every leaf with Ukkonen's notation?
+	
 	int stringId;
 	Leaf(int* invalidPointer, int stringId) : Node(invalidPointer), stringId(stringId) {};
 	~Leaf() {};

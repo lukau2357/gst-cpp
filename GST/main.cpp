@@ -8,16 +8,15 @@
 #include "Utils.h"
 
 int main() {
-	GST* tree = new GST();
-	std::vector<std::string> inStrings = { "mississipi", "crawthipi", "a" };
-	// test(inStrings);
-
-	for (int i = 0; i < inStrings.size(); i++) {
-		tree->addString(inStrings[i]);
+	/* GST* tree = new GST();
+	for (auto it = inStrings.begin(); it != inStrings.end(); ++it) {
+		tree->addString(*it);
 	}
 
 	tree->dfs();
-	delete tree;
-
+	delete tree;*/
+	// test(inStrings);
+	
+	generateAndTest(8);
 	return 0;
 }

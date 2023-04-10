@@ -41,9 +41,6 @@ GST::~GST() {
 std::pair<Node*, bool>GST::testAndSplit(Node* s, int activeStringId, int k, int p, char t) {
 	// activePoint = (s, stringId, k, p) = s'
 	if (k <= p) {
-		if (activeStringId == 2) {
-			printf("Entered\n");
-		}
 		char handle = this->strings[activeStringId][k];
 		Reference handleTransition = s->getAdjacent(handle);
 
@@ -53,6 +50,10 @@ std::pair<Node*, bool>GST::testAndSplit(Node* s, int activeStringId, int k, int 
 		int *pPrime = handleTransition.v;
 		int offset = kPrime + p - k + 1;
 
+		if (transitionStringId == -1) {
+			printf("%d How???\n", s == this->root->getAdjacent('u').child);
+		}
+
 		if (this->strings[transitionStringId][offset] == t) {
 			return std::make_pair(s, true);
 		}
@@ -60,6 +61,7 @@ std::pair<Node*, bool>GST::testAndSplit(Node* s, int activeStringId, int k, int 
 		Node* r = new Node(this->minusOnePointer);
 		// g(s, (k', k' + v - u) = r
 		// g(r, (k' + v - u + 1, p') = s'
+
 		s->adjacent[handle] = Reference(r, transitionStringId, kPrime, new int(kPrime + p - k));
 		// The right pointer for the new edge should remain the same, new pointer would invalidate our leaf update rule !!!!
 		r->adjacent[this->strings[transitionStringId][kPrime + p - k + 1]] = Reference(sPrime, transitionStringId, kPrime + p - k + 1, pPrime);
@@ -143,6 +145,7 @@ std::pair<ActivePoint, int> GST::walkDown(std::string s) {
 	int edgeMatch = 0;
 	char handle;
 	int n = s.size();
+	int firstI = 0;
 	Node *child = this->root;
 	int i = 0;
 
@@ -151,7 +154,8 @@ std::pair<ActivePoint, int> GST::walkDown(std::string s) {
 		// Start walking down from a new edge
 		if(edgeMatch > p) {
 			if(!child->containsEdge(handle)) {
-				return std::make_pair(ActivePoint(child, activePoint.stringId, activePoint.u), i - 1);
+				// Set k = i to signify that this state ends at a node! Otherwise testAndSplit would fail!
+				return std::make_pair(ActivePoint(child, activePoint.stringId, i), i - 1);
 			}
 
 			Reference adjacent = child->getAdjacent(handle);
@@ -160,12 +164,17 @@ std::pair<ActivePoint, int> GST::walkDown(std::string s) {
 			activePoint.stringId = adjacent.stringId;
 			activePoint.u = adjacent.u;
 			p = *(adjacent.v);
+
+			firstI = i;
 			edgeMatch = adjacent.u;
 		}
 
 		else {
 			if(this->strings[activePoint.stringId][edgeMatch] != handle) {
-				return std::make_pair(ActivePoint(activePoint.parrent, activePoint.stringId, activePoint.u), i - 1);
+				// Remember the index value for the handle so that when edgeBreak happens
+				// we return the index value for the handle to return the edge, returning i - 1 
+				// causes seg. faluts!!!
+				return std::make_pair(ActivePoint(activePoint.parrent, activePoint.stringId, firstI), i - 1);
 			}
 
 			edgeMatch++;
@@ -174,7 +183,7 @@ std::pair<ActivePoint, int> GST::walkDown(std::string s) {
 	}
 
 	// The entire input string is contained in the tree.
-	return std::make_pair(ActivePoint(child, activePoint.stringId, activePoint.u), i);
+	return std::make_pair(ActivePoint(child, activePoint.stringId, i - 1), i - 1);
 }
 
 void GST::addString(std::string s) {
@@ -183,12 +192,14 @@ void GST::addString(std::string s) {
 		return;
 	}
 
+	// std::cout << "Adding string: " << s << std::endl;
 	int stringIndex = this->strings.size();
 	s += terminators[lastTerminator++];
 	this->strings.push_back(s);
 	std::pair<ActivePoint, int> wd = walkDown(s);
 
 	ActivePoint activePoint = wd.first;
+
 	int i = wd.second + 1;
 	int *leafPointer = new int(i - 1);
 
@@ -206,10 +217,10 @@ void GST::dfsPrivate(Node *current, std::vector<std::string> &buffer, std::map<i
 		std::string suffix;
 		for (auto it = buffer.begin(); it != buffer.end(); ++it) {
 			suffix += *it;
-			std::cout << *it << " ";
+			// std::cout << *it << " ";
 		}
 
-		std::cout << std::endl;
+		// std::cout << std::endl;
 
 		int suffixSize = suffix.size();
 		suffixes[suffixSize].push_back(std::make_pair(suffix, ptr->stringId));
@@ -244,10 +255,10 @@ void GST::dfs() {
 
 bool GST::isSubstring(std::string query) {
 	std::pair<ActivePoint, int> wd = walkDown(query);
-	return wd.second == query.size();
+	return wd.second == query.size() - 1;
 }
 
 bool GST::isSuffix(std::string query) {
 	std::pair<ActivePoint, int> wd = walkDown(query);
-	return wd.second == query.size() && (dynamic_cast<Leaf*>(wd.first.parrent) != nullptr);
+	return wd.second == query.size() - 1 && (dynamic_cast<Leaf*>(wd.first.parrent) != nullptr);
 }

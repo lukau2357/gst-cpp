@@ -63,3 +63,38 @@ void test(std::vector<std::string> strings) {
 
 	delete tree;
 }
+
+void generateAndTest(int n, int minLength, int maxLen) {
+	// a -> 97
+	// z -> 122
+
+	std::srand(std::time(0));
+	std::vector<std::string> inStrings;
+
+	for (int i = 0; i < n; i++) {
+		int currentLength = 1 + std::rand() % maxLen;
+
+		while (currentLength < minLength) {
+			currentLength = 1 + std::rand() % maxLen;
+		}
+
+		std::string currentString;
+		currentString.reserve(currentLength);
+
+		for (int j = 0; j < currentLength; j++) {
+			currentString += (char)(97 + std::rand() % 26);
+		}
+		
+		inStrings.push_back(currentString);
+	}
+
+	std::cout << "Generated strings: " << std::endl;
+
+	for (int i = 0; i < n; i++) {
+		std::cout << inStrings[i] << std::endl;
+	}
+
+	std::cout << std::endl;
+	std::cout << "Testing for the given strings: " << std::endl;
+	test(inStrings);
+}
