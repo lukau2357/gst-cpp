@@ -64,25 +64,27 @@ void test(std::vector<std::string> strings) {
 	delete tree;
 }
 
-void generateAndTest(int n, int minLength, int maxLen) {
+void generateAndTest(int n, int minLength, int maxLength) {
 	// a -> 97
 	// z -> 122
-
-	std::srand(std::time(0));
+	std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<int> stringLength(minLength, maxLength);
+	std::uniform_int_distribution<int> randomLetter(97, 122);
 	std::vector<std::string> inStrings;
 
 	for (int i = 0; i < n; i++) {
-		int currentLength = 1 + std::rand() % maxLen;
+		int currentLength = stringLength(gen);
 
 		while (currentLength < minLength) {
-			currentLength = 1 + std::rand() % maxLen;
+			currentLength = stringLength(gen);
 		}
 
 		std::string currentString;
 		currentString.reserve(currentLength);
 
 		for (int j = 0; j < currentLength; j++) {
-			currentString += (char)(97 + std::rand() % 26);
+			currentString += (char)(randomLetter(gen));
 		}
 		
 		inStrings.push_back(currentString);
