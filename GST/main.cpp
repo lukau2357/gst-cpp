@@ -1,11 +1,12 @@
 // GST.cpp : This file contains the 'main' function. Program execution begins and ends there.
 #include <chrono>
 #include <iostream>
+#include <unordered_map>
 
 #include "GST.h"
 #include "Utils.h"
 
-int main() {	
+int main() {
 	generateAndTest(8);
 	return 0;
 }

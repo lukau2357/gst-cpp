@@ -8,12 +8,13 @@ void test(std::vector<std::string> strings) {
 
 	std::vector<std::string> buffer;
 	std::map<int, std::vector<std::pair<std::string, int>>> suffixMap;
+	std::unordered_map<std::string, int> repeatingSuffixMap;
 	tree->dfsPrivate(tree->root, buffer, suffixMap);
 	int errorCount = 0;
 
 	// 1. Every path from the root to a leaf corrseponds to a suffix from one of the input strings
-	// We will consider tree->strings because they have a terminator character appended.
-
+	// We will consider tree->strings because they have a terminator character appended. 
+	// Also verify that paths from root to leaf are all unique.
 	for (auto i = suffixMap.begin(); i != suffixMap.end(); ++i) {
 		int suffixSize = i->first;
 		for (auto j = i->second.begin(); j != i->second.end(); ++j) {
@@ -26,9 +27,16 @@ void test(std::vector<std::string> strings) {
 					" does not correspond to a suffix in string with id " << stringId << std::endl;
 				++errorCount;
 			}
+
+			if(repeatingSuffixMap[currentSuffix] > 0) {
+				std::cout << "Repating leaf path label " << currentSuffix 
+						  << ". Already seen " << repeatingSuffixMap[currentSuffix]++ <<
+							 " times." << std::endl;
+			}
 		}
  	}
 
+	
 	// 2. Every substring of every input string is contained in the tree. Furthermore, every suffix ends in a leaf.
 	for (int k = 0; k < tree->strings.size(); k++) {
 		std::string currentString = tree->strings[k];
