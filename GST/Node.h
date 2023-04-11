@@ -4,13 +4,7 @@
 // Use map instead of unordered_map to support lexicographical (inorder) traversal
 // compute suffix arrays someday?
 #include <unordered_map>
-#include <unordered_set>
-#include <map>
-
-// Convenience variables since right end is always kept as a pointer
-// to solve extension 1 <= h < j, where j is the index of the active suffix
-// https://stackoverflow.com/questions/15517658/fatal-error-lnk1169-one-or-more-multiply-defined-symbols-found-in-game-programm
-
+#include <bitset>
 
 // Forward declaration of class Node required since Reference anc ActivePoint have pointers to Node
 class Node;
@@ -45,6 +39,9 @@ class Node {
 public:
 	Node* suffixLink;
 	int* invalidPointer;
+	// Mask which encodes the ids of the leaves below the current node.
+	unsigned int mask = 0;
+
 	Node(int *invalidPointer) : suffixLink(nullptr), invalidPointer(invalidPointer) {};
 	virtual ~Node() {};
 	std::unordered_map<char, Reference> adjacent;
@@ -65,10 +62,6 @@ public:
 
 class Leaf :public  Node {
 public:
-	// In GST one leaf can represent multiple suffixes, keep track for each different input string
-	// The id of the suffix that it represents
-	// TODO: Add suffix id in every leaf with Ukkonen's notation?
-	
 	int stringId;
 	Leaf(int* invalidPointer, int stringId) : Node(invalidPointer), stringId(stringId) {};
 	~Leaf() {};

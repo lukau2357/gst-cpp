@@ -117,6 +117,7 @@ ActivePoint GST::update(ActivePoint activePoint, int currentStringIndex, int i, 
 
 	while (!res.second) {
 		Leaf *leaf = new Leaf(this->minusOnePointer, currentStringIndex);
+		// Encode the current string as the mask for the new leaf.
 		res.first->adjacent[newChar] = Reference(leaf, currentStringIndex, i, leafPointer);
 		
 		if (oldRoot != root) {
@@ -253,6 +254,38 @@ void GST::dfs() {
 	}
 }
 
+// Prove that this takes linear time!
+std::unordered_map<int, std::vector<int>> GST::constructMap(Node* current, int labelDepth) {
+	Leaf* leafTest = dynamic_cast<Leaf*>(current);
+	std::unordered_map<int, std::vector<int>> res;
+
+	if (leafTest != nullptr) {
+		std::unordered_map<int, std::vector<int>> res;
+		int n = this->strings[leafTest->stringId].size();
+		res[leafTest->stringId] = std::vector<int>{ n - labelDepth };
+		return res;
+	}
+
+	Node* child;
+	int u, v;
+
+	for (auto it = current->adjacent.begin(); it != current->adjacent.end(); ++it) {
+		child = it->second.child;
+		u = it->second.u;
+		v = *(it->second.v);
+		std::unordered_map<int, std::vector<int>> subRes = constructMap(child, labelDepth + v - u + 1);
+
+		for (auto i = subRes.begin(); i != subRes.end(); ++i) {
+			for (auto j = i->second.begin(); j != i->second.end(); ++j) {
+				res[i->first].push_back(*j);
+			}
+		}
+
+		
+	}
+	return res;
+}
+
 bool GST::isSubstring(std::string query) {
 	std::pair<ActivePoint, int> wd = walkDown(query);
 	return wd.second == query.size() - 1;
@@ -261,4 +294,36 @@ bool GST::isSubstring(std::string query) {
 bool GST::isSuffix(std::string query) {
 	std::pair<ActivePoint, int> wd = walkDown(query);
 	return wd.second == query.size() - 1 && (dynamic_cast<Leaf*>(wd.first.parrent) != nullptr);
+}
+
+std::unordered_map<int, std::vector<int>> GST::occurences(std::string query) {
+	std::pair<ActivePoint, int> wd = walkDown(query);
+	if (wd.second < query.size() - 1) {
+		return std::unordered_map<int, std::vector<int>> {};
+	}
+
+	return constructMap(wd.first.parrent, query.size());
+}
+
+/* TODO: Finish implementation of this function! */
+std::unordered_map<int, std::vector<int>> GST::longestCommonSubstringPrivate(Node *current, std::string pathLabel, 
+	std::string &solution, std::unordered_map<int, std::vector<int>> &maxOccurences) {
+
+	Leaf* leafTest = dynamic_cast<Leaf*>(current);
+	std::unordered_map<int, std::vector<int>> res;
+
+	if(leafTest != nullptr) {
+		int n = this->strings[leafTest->stringId].size();
+		res[leafTest->stringId] = std::vector<int>{ n - (int) (pathLabel.size()) };
+		return res;
+	}
+
+	std::string descendString;
+	std::unordered_map<int, std::vector<int>> subRes;
+	Node* child;
+	int childStringId, int u, v;
+
+	/*for (auto it = current->adjacent.begin(); it != current->adjacent.end(); ++it) {
+		descendString = pathLabel + 
+	}*/
 }
