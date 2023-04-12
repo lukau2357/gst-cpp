@@ -139,8 +139,9 @@ ActivePoint GST::update(ActivePoint activePoint, int currentStringIndex, int i, 
 // Implement walking down procedure for GST to get the new active state.
 // We cannot use the skip/count trick here since we do not have any theoretical guarantees
 // regarding the path label while descending the tree, which was not the case with 
-// the build procecdure.
-std::pair<ActivePoint, int> GST::walkDown(std::string s) {
+// the build procecdure. Return also the label depth of the state that terminated the search, that should
+// be used for GST queries.
+std::pair<ActivePoint, std::pair<int, int>> GST::walkDown(std::string s) {
 	ActivePoint activePoint(this->root, 0, 0);
 	int p = -1;
 	int edgeMatch = 0;
@@ -150,13 +151,16 @@ std::pair<ActivePoint, int> GST::walkDown(std::string s) {
 	Node *child = this->root;
 	int i = 0;
 
+	// Label depth is always equal to i.
+
 	while(i < n) {
 		handle = s[i];
 		// Start walking down from a new edge
 		if(edgeMatch > p) {
 			if(!child->containsEdge(handle)) {
 				// Set k = i to signify that this state ends at a node! Otherwise testAndSplit would fail!
-				return std::make_pair(ActivePoint(child, activePoint.stringId, i), i - 1);
+				// labelDepth = i, search terminated in a node.
+				return std::make_pair(ActivePoint(child, activePoint.stringId, i), std::make_pair(i - 1, i));
 			}
 
 			Reference adjacent = child->getAdjacent(handle);
@@ -174,8 +178,11 @@ std::pair<ActivePoint, int> GST::walkDown(std::string s) {
 			if(this->strings[activePoint.stringId][edgeMatch] != handle) {
 				// Remember the index value for the handle so that when edgeBreak happens
 				// we return the index value for the handle to return the edge, returning i - 1 
-				// causes seg. faluts!!!
-				return std::make_pair(ActivePoint(activePoint.parrent, activePoint.stringId, firstI), i - 1);
+				// causes seg. faluts!!!. 
+
+				// Characters matched on the edge: [u, edgeMatch - 1]. Substract length of this from labelDepth.
+				// i - (edgeMatch - 1 - u + 1) = i - edgeMatch - u
+				return std::make_pair(ActivePoint(activePoint.parrent, activePoint.stringId, firstI), std::make_pair(i - 1, i - edgeMatch - activePoint.u));
 			}
 
 			edgeMatch++;
@@ -184,7 +191,8 @@ std::pair<ActivePoint, int> GST::walkDown(std::string s) {
 	}
 
 	// The entire input string is contained in the tree.
-	return std::make_pair(ActivePoint(child, activePoint.stringId, i - 1), i - 1);
+	// Remaining part of the edge: [edgeMatch, p]. Add this to labelDepth.
+	return std::make_pair(ActivePoint(child, activePoint.stringId, i - 1), std::make_pair(i - 1, i + p - edgeMatch + 1));
 }
 
 void GST::addString(std::string s) {
@@ -197,11 +205,11 @@ void GST::addString(std::string s) {
 	int stringIndex = this->strings.size();
 	s += terminators[lastTerminator++];
 	this->strings.push_back(s);
-	std::pair<ActivePoint, int> wd = walkDown(s);
+	std::pair<ActivePoint, std::pair<int, int>> wd = walkDown(s);
 
 	ActivePoint activePoint = wd.first;
 
-	int i = wd.second + 1;
+	int i = wd.second.first + 1;
 	int *leafPointer = new int(i - 1);
 
 	for(; i < s.size(); i++) {
@@ -254,7 +262,6 @@ void GST::dfs() {
 	}
 }
 
-// Prove that this takes linear time!
 std::unordered_map<int, std::vector<int>> GST::constructMap(Node* current, int labelDepth) {
 	Leaf* leafTest = dynamic_cast<Leaf*>(current);
 	std::unordered_map<int, std::vector<int>> res;
@@ -274,42 +281,43 @@ std::unordered_map<int, std::vector<int>> GST::constructMap(Node* current, int l
 		u = it->second.u;
 		v = *(it->second.v);
 		std::unordered_map<int, std::vector<int>> subRes = constructMap(child, labelDepth + v - u + 1);
-
+		
+		// at most k * z iterations, k is the number of strings and z is the maximal number of 
+		// occurences of a pattern.
 		for (auto i = subRes.begin(); i != subRes.end(); ++i) {
 			for (auto j = i->second.begin(); j != i->second.end(); ++j) {
 				res[i->first].push_back(*j);
 			}
 		}
-
-		
 	}
 	return res;
 }
 
 bool GST::isSubstring(std::string query) {
-	std::pair<ActivePoint, int> wd = walkDown(query);
-	return wd.second == query.size() - 1;
+	std::pair<ActivePoint, std::pair<int, int>> wd = walkDown(query);
+	return wd.second.first == query.size() - 1;
 }
 
 bool GST::isSuffix(std::string query) {
-	std::pair<ActivePoint, int> wd = walkDown(query);
-	return wd.second == query.size() - 1 && (dynamic_cast<Leaf*>(wd.first.parrent) != nullptr);
+	std::pair<ActivePoint, std::pair<int, int>> wd = walkDown(query);
+	return wd.second.first == query.size() - 1 && (dynamic_cast<Leaf*>(wd.first.parrent) != nullptr);
 }
 
 std::unordered_map<int, std::vector<int>> GST::occurences(std::string query) {
-	std::pair<ActivePoint, int> wd = walkDown(query);
-	if (wd.second < query.size() - 1) {
+	std::pair<ActivePoint, std::pair<int, int>> wd = walkDown(query);
+	if (wd.second.first < query.size() - 1) {
 		return std::unordered_map<int, std::vector<int>> {};
 	}
 
-	return constructMap(wd.first.parrent, query.size());
+	return constructMap(wd.first.parrent, wd.second.second);
 }
 
-/* TODO: Finish implementation of this function! */
-std::unordered_map<int, std::vector<int>> GST::longestCommonSubstringPrivate(Node *current, std::string pathLabel, 
-	std::string &solution, std::unordered_map<int, std::vector<int>> &maxOccurences) {
+std::unordered_map<int, std::vector<int>> GST::kCommonSubstringGeneralizedPrivate(Node *current, std::string pathLabel, 
+	int minLength, int minStrings, int minOccurences, 
+	std::vector<std::string> &solutions, 
+	std::vector<std::unordered_map<int, std::vector<int>>> &occurences) {
 
-	Leaf* leafTest = dynamic_cast<Leaf*>(current);
+	Leaf *leafTest = dynamic_cast<Leaf*>(current);
 	std::unordered_map<int, std::vector<int>> res;
 
 	if(leafTest != nullptr) {
@@ -321,9 +329,76 @@ std::unordered_map<int, std::vector<int>> GST::longestCommonSubstringPrivate(Nod
 	std::string descendString;
 	std::unordered_map<int, std::vector<int>> subRes;
 	Node* child;
-	int childStringId, int u, v;
+	int childStringId, u, v;
+	std::string lastChar;
 
-	/*for (auto it = current->adjacent.begin(); it != current->adjacent.end(); ++it) {
-		descendString = pathLabel + 
-	}*/
+	for(auto it = current->adjacent.begin(); it != current->adjacent.end(); ++it) {
+		child = it->second.child;
+		childStringId = it->second.stringId;
+		u = it->second.u;
+		v = *(it->second.v);
+		descendString = pathLabel + this->strings[childStringId].substr(u, v - u + 1);
+		subRes = kCommonSubstringGeneralizedPrivate(child, descendString, minLength, minStrings, minOccurences,
+		solutions, occurences);
+
+		for(auto i = subRes.begin(); i != subRes.end(); ++i) {
+			for(auto j = i->second.begin(); j != i->second.end(); ++j) {
+				res[i->first].push_back(*j);
+			}
+		}
+	}
+
+	if(pathLabel.size() >= minLength && res.size() >= minStrings) {
+		bool isSolution = true;
+		for(auto it = res.begin(); it != res.end(); ++it) {
+			if(it->second.size() < minOccurences) {
+				isSolution = false;
+			}
+		}
+
+		if(isSolution) {
+			solutions.push_back(pathLabel);
+			occurences.push_back(res);
+		}
+	}
+
+	return res;
+}
+
+void GST::kCommonSubstringGeneralized(int minLength, int minStrings, int minOccurences, std::vector<std::string> &solutions, std::vector<std::unordered_map<int, std::vector<int>>> &occurences) {
+	kCommonSubstringGeneralizedPrivate(this->root, "", minLength, minStrings, minOccurences, solutions, occurences);	
+}
+
+int GST::longestCommonSubstringPrivate(Node *current, std::string pathLabel, std::string &solution, int supermask) {
+	Leaf *leafTest = dynamic_cast<Leaf*>(current);
+	if(leafTest != nullptr) {
+		return 1 << (leafTest->stringId);
+	}
+
+	int currentMask = 0;
+	Node *child;
+	int childStringId, u, v;
+	std::string descentString;
+
+	for(auto it = current->adjacent.begin(); it != current->adjacent.end(); ++it) {
+		child = it->second.child;
+		childStringId = it->second.stringId;
+		u = it->second.u;
+		v = *(it->second.v);
+		descentString = pathLabel + this->strings[childStringId].substr(u, v - u + 1);
+		currentMask |= longestCommonSubstringPrivate(child, descentString, solution, supermask);
+	}
+
+	if(currentMask == supermask && pathLabel.size() > solution.size()) {
+		solution = pathLabel;
+	}
+
+	return currentMask;
+}
+
+std::string GST::longestCommonSubstring() {
+	std::string solution = "";
+	int supermask = (1 << this->strings.size()) - 1;
+	longestCommonSubstringPrivate(this->root, "", solution, supermask);
+	return solution;
 }

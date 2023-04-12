@@ -27,7 +27,7 @@ public:
 	// Functions for Ukkonen's algorithm
 	std::pair<Node*, bool> testAndSplit(Node *s, int activeStringId, int k, int p, char t);
 	ActivePoint cannonize(Node *s, int activeStringId, int k, int p);
-	std::pair<ActivePoint, int> walkDown(std::string s);
+	std::pair<ActivePoint, std::pair<int, int>> walkDown(std::string s);
 	ActivePoint update(ActivePoint activePoint, int currentStringIndex, int i, int *leafPointer);
 	void addString(std::string s);
 
@@ -49,9 +49,20 @@ public:
 	bool isSuffix(std::string query);
 	// Return all string Ids that contain the query as a substring.
 	std::unordered_map<int, std::vector<int>> occurences(std::string query); 
-	// DFS traversal function for longest common substring 
-	std::unordered_map<int, std::vector<int>> longestCommonSubstringPrivate(Node* current, std::string pathLabel,
-								std::string& solution, std::unordered_map<int, std::vector<int>> &maxOccurences);
+	// DFS traversal function for the generalized k common substring problem. We want all k common substrings that 
+	// are of length at least minLength, and they occur at least minOccurences times in every string they appear.
+	// Should also be a private function but made public for testing convenience.
+	std::unordered_map<int, std::vector<int>> kCommonSubstringGeneralizedPrivate(Node* current, std::string pathLabel,
+		int minLength, int minStrings, int minOccurences, 
+		std::vector<std::string> &solutions, 
+		std::vector<std::unordered_map<int, std::vector<int>>> &occurences);
+	void kCommonSubstringGeneralized(int minLength, int minStrings, int minOccurences, std::vector<std::string> &solutions, std::vector<std::unordered_map<int, std::vector<int>>> &occurences);
+	// Functions which solve the longestCommonSubstring problem. Unlike the other functions, we return only the longest common
+	// substring without any other restrictions, and this can be done in linear time. 
+	// supermask refers to a bitmask which encodes every string present in the GST, it is precomputed and passed as
+	// a parameter to this function.
+	int longestCommonSubstringPrivate(Node *current, std::string pathLabel, std::string &solution, int supermask);
+	std::string longestCommonSubstring();
 };
 
 #endif

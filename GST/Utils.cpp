@@ -36,7 +36,6 @@ void test(std::vector<std::string> strings) {
 		}
  	}
 
-	
 	// 2. Every substring of every input string is contained in the tree. Furthermore, every suffix ends in a leaf.
 	for (int k = 0; k < tree->strings.size(); k++) {
 		std::string currentString = tree->strings[k];
