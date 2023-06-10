@@ -367,3 +367,6 @@ GST/main
 GST/main.exe
 
 TODO.md
+
+# Metadate vscode file
+.vscode/*
